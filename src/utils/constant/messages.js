@@ -17,4 +17,5 @@ export const messages = {
   review: generateMessage("review"),
   file: { required: "file is required" }, //400
   user: generateMessage("user"),
+  cart: generateMessage("cart"),
 };

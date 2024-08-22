@@ -7,6 +7,9 @@ import { verifyToken } from "../utils/token.js";
 export const isAuthenticated = () => {
   return async (req, res, next) => {
     const { authorization } = req.headers;
+    if (!authorization) {
+      return next(new AppError("please login", 401));
+    }
     const [bearer, token] = authorization.split(" ");
     // check token verify
     let result = "";
@@ -22,7 +25,7 @@ export const isAuthenticated = () => {
       });
     }
     if (result.message) {
-      return next(new AppError(result.message));
+      return next(new AppError(result.message, 401));
     }
     // check user
     const user = await User.findOne({

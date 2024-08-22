@@ -1,4 +1,4 @@
-import { User } from "../../../db/index.js";
+import { Cart, User } from "../../../db/index.js";
 import { status } from "../../utils/constant/enums.js";
 import { sendEmail } from "../../utils/email.js";
 import { AppError, messages } from "../../utils/index.js";
@@ -58,6 +58,7 @@ export const verifyAccount = async (req, res, next) => {
   if (!user) {
     return next(new AppError("invalid credential", 401));
   }
+  await Cart.create({ user: user._id, products: [] });
   // todo handel null
   return res.status(200).json({
     message: messages.user.verifiedSuccessfully,
@@ -83,7 +84,10 @@ export const login = async (req, res, next) => {
     return next(new AppError("invalid credential", 401));
   }
   // generate token
-  const token = generateToken({ payload: { email } });
+  const token = generateToken({
+    payload: { email },
+    secretKey: process.env.secretKeyAccessToken,
+  });
   return res
     .status(200)
     .json({ message: "welcome", success: true, accessToken: token });

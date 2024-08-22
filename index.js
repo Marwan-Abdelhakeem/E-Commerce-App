@@ -1,12 +1,9 @@
 // import modules
-import path from "path";
 import express from "express";
-import dotenv from "dotenv";
 import { connectDB } from "./db/connection.js";
-import { globalErrorHandling } from "./src/utils/index.js";
 import * as allRouters from "./src/index.js";
+import { globalErrorHandling } from "./src/utils/index.js";
 
-dotenv.config({ path: path.resolve("./config/.env") });
 //create server
 const app = express();
 const port = +process.env.PORT;
@@ -20,6 +17,7 @@ app.use("/brand", allRouters.brandRouter);
 app.use("/product", allRouters.productRouter);
 app.use("/auth", allRouters.authRouter);
 app.use("/review", allRouters.reviewRouter);
+app.use("/wishlist", allRouters.wishlistRouter);
 // globalErrorHandling
 app.use(globalErrorHandling);
 //listen server
