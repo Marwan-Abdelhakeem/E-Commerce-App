@@ -18,4 +18,6 @@ export const messages = {
   file: { required: "file is required" }, //400
   user: generateMessage("user"),
   cart: generateMessage("cart"),
+  coupon: generateMessage("coupon"),
+  order: generateMessage("order"),
 };

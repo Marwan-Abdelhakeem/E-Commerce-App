@@ -38,12 +38,12 @@ const productSchema = new Schema(
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
     updatedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
     //===== images =====//
     mainImage: Object,
@@ -80,5 +80,10 @@ const productSchema = new Schema(
 productSchema.virtual("finalPrice").get(function () {
   return this.price - this.price * ((this.discount || 0) / 100);
 });
+
+productSchema.methods.inStock = function (quantity) {
+  return this.stock < quantity ? false : true
+};
+
 // model
 export const Product = model("Product", productSchema);

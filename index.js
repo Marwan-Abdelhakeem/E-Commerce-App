@@ -18,6 +18,9 @@ app.use("/product", allRouters.productRouter);
 app.use("/auth", allRouters.authRouter);
 app.use("/review", allRouters.reviewRouter);
 app.use("/wishlist", allRouters.wishlistRouter);
+app.use("/cart", allRouters.cartRouter);
+app.use("/coupon", allRouters.couponRouter);
+app.use("/order", allRouters.orderRouter);
 // globalErrorHandling
 app.use(globalErrorHandling);
 //listen server
