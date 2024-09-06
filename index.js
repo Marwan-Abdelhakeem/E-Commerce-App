@@ -12,6 +12,17 @@ const port = +process.env.PORT;
 //connect to db
 connectDB();
 //parse req
+app.use(express.json());
+app.use("/category", allRouters.categoryRouter);
+app.use("/sub-category", allRouters.subcategoryRouter);
+app.use("/brand", allRouters.brandRouter);
+app.use("/product", allRouters.productRouter);
+app.use("/auth", allRouters.authRouter);
+app.use("/review", allRouters.reviewRouter);
+app.use("/wishlist", allRouters.wishlistRouter);
+app.use("/cart", allRouters.cartRouter);
+app.use("/coupon", allRouters.couponRouter);
+app.use("/order", allRouters.orderRouter);
 
 app.use("*", (req, res, next) => {
   next(new AppError(`${req.method} ${req.originalUrl} not found`, 404));
