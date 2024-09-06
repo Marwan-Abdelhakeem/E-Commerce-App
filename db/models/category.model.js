@@ -18,7 +18,7 @@ const categorySchema = new Schema(
       trim: true,
     },
     image: {
-      type: Object, //  {path:} // {secure_url:,public_id}
+      type: Object, // {path:} // {secure_url:,public_id}
       required: true,
     },
     createdBy: {
