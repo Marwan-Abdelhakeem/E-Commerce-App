@@ -1,6 +1,6 @@
 import slugify from "slugify";
 import { Category, Subcategory, Product } from "../../../db/index.js";
-import { deleteFile, cloudinary, AppError, messages } from "../../utils/index.js";
+import { cloudinary, AppError, messages } from "../../utils/index.js";
 
 // add subcategory
 export const addSubcategory = async (req, res, next) => {
@@ -17,25 +17,33 @@ export const addSubcategory = async (req, res, next) => {
     return next(new AppError(messages.category.notFound, 404));
   }
   // check name existence
-  const nameExist = await Subcategory.findOne({
+  const subcategoryExist = await Subcategory.findOne({
     name,
     category,
   });
-  if (nameExist) {
+  if (subcategoryExist) {
     return next(new AppError(messages.subcategory.alreadyExist, 409));
   }
   // prepare data
   const slug = slugify(name);
+  const { secure_url, public_id } = await cloudinary.uploader.upload(
+    req.file.path,
+    {
+      folder: `E-commerce/${categoryExist.name}/${name}`,
+    }
+  );
+  req.uploadedImages = [{ public_id }];
   const subcategory = new Subcategory({
     name,
     slug,
     category,
-    image: { path: req.file.path },
+    image: { secure_url, public_id },
+    createdBy: req.authUser._id,
   });
   // add to db
   const createdSubcategory = await subcategory.save();
   if (!createdSubcategory) {
-    // todo rollback delete image
+    // rollback
     return next(new AppError(messages.subcategory.failToCreate, 500));
   }
   // send response
@@ -89,10 +97,14 @@ export const updateSubcategory = async (req, res, next) => {
   }
   // update image
   if (req.file) {
-    //delete old image
-    deleteFile(subcategoryExist.image.path);
-    subcategoryExist.image.path = req.file.path;
-    subcategoryExist.markModified("image");
+    const { secure_url, public_id } = await cloudinary.uploader.upload(
+      req.file.path,
+      {
+        public_id: subcategoryExist.image.public_id,
+      }
+    );
+    req.uploadedImages = [{ public_id }];
+    subcategoryExist.image = { secure_url, public_id };
   }
   // update to db
   const updatedSubcategory = await subcategoryExist.save();
@@ -112,16 +124,30 @@ export const deleteSubcategory = async (req, res, next) => {
   // get data from req
   const { subcategoryId } = req.params;
   //check existence
-  const deletedSubcategory = await Subcategory.findByIdAndDelete(subcategoryId);
-  if (!deletedSubcategory) {
+  const subcategoryExist = await Subcategory.findByIdAndDelete(
+    subcategoryId
+  ).populate([
+    { path: "categories", select: "name" },
+    { path: "products", select: "_id" },
+  ]);
+  if (!subcategoryExist) {
     return next(new AppError(messages.subcategory.notFound, 404));
   }
-  // delete old image
-  deleteFile(deletedSubcategory.image.path);
+  // prepare ids
+  const productsIds = [];
+  for (const product of subcategoryExist.products) {
+    productsIds.push(product._id);
+  }
+  // delete related products
+  await Product.deleteMany({ _id: { $in: productsIds } });
+  // delete images for category subcategory product
+  const folderPath = `E-commerce/${subcategoryExist.categories[0].name}/${subcategoryExist.name}`;
+  await cloudinary.api.delete_resources_by_prefix(folderPath);
+  await cloudinary.api.delete_folder(folderPath);
   // send response
   return res.status(200).json({
     message: messages.subcategory.deletedSuccessfully,
     success: true,
-    data: deletedSubcategory,
+    data: subcategoryExist,
   });
 };

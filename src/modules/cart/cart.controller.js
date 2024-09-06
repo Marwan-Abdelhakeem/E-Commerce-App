@@ -17,7 +17,7 @@ export const addToCart = async (req, res, next) => {
     { new: true }
   );
   let message = messages.cart.updatedSuccessfully;
-  data = productInCart
+  data = productInCart;
   if (!productInCart) {
     const cart = await Cart.findOneAndUpdate(
       { user: req.authUser._id },
@@ -28,4 +28,23 @@ export const addToCart = async (req, res, next) => {
     data = cart;
   }
   return res.status(200).json({ message, success: true, data });
+};
+export const removeFromCart = async (req, res, next) => {
+  const { productId } = req.params;
+
+  const productInCart = await Cart.findOneAndUpdate(
+    { user: req.authUser._id, "products.productId": productId },
+    { $pull: { products: { productId } } },
+    { new: true }
+  );
+
+  if (!productInCart) {
+    return next(new AppError(`${messages.product.notFound} in cart`, 404));
+  }
+
+  return res.status(200).json({
+    message: "Product removed from cart",
+    success: true,
+    data: productInCart,
+  });
 };

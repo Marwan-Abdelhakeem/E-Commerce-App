@@ -28,7 +28,7 @@ export const getWishlist = async (req, res, next) => {
   });
 };
 
-export const deleteFromWishlist = async (req, res, next) => {
+export const removeFromWishlist = async (req, res, next) => {
   const { productId } = req.params;
   const wishlist = await User.findByIdAndUpdate(
     req.authUser._id,

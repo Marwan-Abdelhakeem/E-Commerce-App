@@ -14,8 +14,8 @@ export const createOrder = async (req, res, next) => {
     }
   }
   const cart = await Cart.findOne({ user: req.authUser._id });
-  if (!cart) {
-    return next(new AppError("not have cart", 400));
+  if (!cart.products.length) {
+    return next(new AppError("cart is empty", 400));
   }
   const products = cart.products;
   let orderPrice = 0;
@@ -24,40 +24,40 @@ export const createOrder = async (req, res, next) => {
   for (const product of products) {
     const productExist = await Product.findById(product.productId);
     if (!productExist) {
-      return next(new AppError(messages.product.notFound, 404));
+      return next(
+        new AppError(`messages.product.notFound ${product.productId}`, 404)
+      );
     }
     if (!productExist.inStock(product.quantity)) {
-      return next(new AppError(`product ${productExist.name} is out of stock`, 400));
+      return next(
+        new AppError(`product ${productExist.name} is out of stock`, 400)
+      );
     }
     orderPrice += productExist.finalPrice * product.quantity;
     orderProducts.push({
-      name:productExist.name,
+      name: productExist.name,
       productId: productExist._id,
       price: productExist.price,
       finalPrice: productExist.finalPrice,
       quantity: product.quantity,
       discount: productExist.discount,
-    })
+    });
   }
-  console.log(couponExist.discount);
-  
-  let discount = couponExist.discount
+  let discount = couponExist.discount;
   couponExist.couponType == couponTypes.FIXEDAMOUNT
-    ? (finalPrice = orderPrice - discount, discount = `${discount} $`):
-  couponExist.couponType == couponTypes.PERCENTAGE
-    ? (finalPrice = orderPrice - orderPrice * ((discount || 0) / 100),discount = `${discount} %`):0
+    ? ((finalPrice = orderPrice - discount), (discount = `${discount} $`))
+    : couponExist.couponType == couponTypes.PERCENTAGE
+    ? ((finalPrice = orderPrice - orderPrice * ((discount || 0) / 100)),
+      (discount = `${discount} %`))
+    : (finalPrice = orderPrice);
 
-  // let discount = couponExist.discount
-  // couponExist.couponType == couponTypes.FIXEDAMOUNT
-  //   ? (finalPrice = orderPrice - discount, discount = `${discount} $`)
-  //   : (finalPrice = orderPrice - orderPrice * ((discount || 0) / 100),discount = `${discount} %`);
   const order = new Order({
     user: req.authUser._id,
     address: { phone, street },
     coupon: {
       couponId: couponExist._id,
       code: coupon,
-      discount
+      discount,
     },
     paymentMethod,
     products: orderProducts,

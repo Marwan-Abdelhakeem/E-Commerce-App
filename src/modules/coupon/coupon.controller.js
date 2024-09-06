@@ -21,6 +21,6 @@ export const createCoupon = async (req, res, next) => {
   return res.status(201).json({
     message: messages.coupon.createdSuccessfully,
     success: true,
-    data: createCoupon,
+    data: createdCoupon,
   });
 };

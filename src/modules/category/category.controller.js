@@ -1,11 +1,6 @@
 import slugify from "slugify";
 import { Category, Subcategory, Product } from "../../../db/index.js";
-import {
-  deleteFile,
-  cloudinary,
-  AppError,
-  messages,
-} from "../../utils/index.js";
+import { cloudinary, AppError, messages } from "../../utils/index.js";
 
 //add category
 export const addCategory = async (req, res, next) => {
@@ -23,15 +18,21 @@ export const addCategory = async (req, res, next) => {
   }
   // prepare data
   const slug = slugify(name);
+  const { secure_url, public_id } = await cloudinary.uploader.upload(
+    req.file.path,
+    { folder: `E-commerce/${name}` }
+  );
+  req.uploadedImages = [{ public_id }];
   const category = new Category({
     name,
     slug,
-    image: { path: req.file.path },
+    image: { secure_url, public_id },
+    createdBy: req.authUser._id,
   });
   // add to db
   const createdCategory = await category.save();
   if (!createdCategory) {
-    // todo rollback delete image
+    // rollback
     return next(new AppError(messages.category.failToCreate, 500));
   }
   // send response
@@ -46,33 +47,41 @@ export const addCategory = async (req, res, next) => {
 export const updateCategory = async (req, res, next) => {
   // get data from req
   let { name } = req.body;
-  name = name.toLowerCase();
   const { categoryId } = req.params;
   //check existence
   const categoryExist = await Category.findById(categoryId);
   if (!categoryExist) {
     return next(new AppError(messages.category.notFound, 404));
   }
-  // check existence
-  const nameExist = await Category.findOne({ name, _id: { $ne: categoryId } });
-  if (nameExist) {
-    return next(new AppError(messages.category.alreadyExist, 409));
-  }
   // prepare data
   if (name) {
+    // check existence
+    name = name.toLowerCase();
+    const nameExist = await Category.findOne({
+      name,
+      _id: { $ne: categoryId },
+    });
+    if (nameExist) {
+      return next(new AppError(messages.category.alreadyExist, 409));
+    }
     categoryExist.name = name;
     categoryExist.slug = slugify(name);
   }
   // update image
   if (req.file) {
-    //delete old image
-    deleteFile(categoryExist.image.path);
-    categoryExist.image.path = req.file.path;
-    categoryExist.markModified("image");
+    const { secure_url, public_id } = await cloudinary.uploader.upload(
+      req.file.path,
+      {
+        public_id: categoryExist.image.public_id,
+      }
+    );
+    req.uploadedImages = [{ public_id }];
+    categoryExist.image = { secure_url, public_id };
   }
   // update to db
   const updatedCategory = await categoryExist.save();
   if (!updatedCategory) {
+    // rollback
     return next(new AppError(messages.category.failToUpdate, 500));
   }
   // send response
@@ -118,8 +127,8 @@ export const deleteCategory = async (req, res, next) => {
   const { categoryId } = req.params;
   //check existence
   const categoryExist = await Category.findByIdAndDelete(categoryId).populate([
-    { path: "subcategories", select: "image" },
-    { path: "products", select: "mainImage subImages" },
+    { path: "subcategories", select: "_id" },
+    { path: "products", select: "_id" },
   ]);
   if (!categoryExist) {
     return next(new AppError(messages.category.notFound, 404));
@@ -127,36 +136,21 @@ export const deleteCategory = async (req, res, next) => {
   // prepare ids
   const subcategoryIds = [];
   const productsIds = [];
-  const imagesPaths = [];
-  const imagesCloud = [];
-  imagesPaths.push(categoryExist.image.path);
-  for (let i = 0; i < categoryExist.subcategories.length; i++) {
-    subcategoryIds.push(categoryExist.subcategories[i]._id);
-    imagesPaths.push(categoryExist.subcategories[i].image.path);
+  for (const subcategory of categoryExist.subcategories) {
+    subcategoryIds.push(subcategory._id);
   }
   for (const product of categoryExist.products) {
     productsIds.push(product._id);
-    imagesCloud.push(product.mainImage.public_id);
-    product.subImages.forEach((image) => {
-      imagesCloud.push(image.public_id);
-    });
   }
   // delete related subcategories
   await Subcategory.deleteMany({ _id: { $in: subcategoryIds } });
   // delete related products
   await Product.deleteMany({ _id: { $in: productsIds } });
-  // delete images for category subcategory
-  for (const path of imagesPaths) {
-    deleteFile(path);
-  }
-  // delete images for products
-  for (const public_id of imagesCloud) {
-    await cloudinary.uploader.destroy(public_id);
-    // note
-    // cloudinary.api.delete_resources_by_prefix();
-    // cloudinary.api.delete_folder();
-  }
 
+  // delete images for category subcategory product
+  const folderPath = `E-commerce/${categoryExist.name}`;
+  await cloudinary.api.delete_resources_by_prefix(folderPath);
+  await cloudinary.api.delete_folder(folderPath);
   // send response
   return res.status(200).json({
     message: messages.category.deletedSuccessfully,

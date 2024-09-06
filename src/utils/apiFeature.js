@@ -16,6 +16,7 @@ export class ApiFeature {
     this.queryData.page = page;
     const skip = (page - 1) * size;
     this.mongooseQuery = this.mongooseQuery.limit(size).skip(skip);
+    this.metaData = { page, size };
     return this;
   }
   sort() {
@@ -39,10 +40,6 @@ export class ApiFeature {
       )
     );
     this.mongooseQuery = this.mongooseQuery.find(filter);
-    this.queryData.metaData = { page, size: 0 };
-    // this.queryData.metaData.page = this.queryData.page;
-    // this.queryData.metaData.size = this.mongooseQuery.countDocuments(filter);
-// todo metaData
     return this;
   }
 }

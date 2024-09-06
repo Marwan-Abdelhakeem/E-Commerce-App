@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { asyncHandler, cloudUpload, fileUpload } from "../../utils/index.js";
+import { isAuthenticated } from "../../middleware/authentication.js";
+import { isAuthorized } from "../../middleware/authorization.js";
 import { isValid } from "../../middleware/validation.js";
 import {
   addCategoryVal,
@@ -7,6 +8,7 @@ import {
   getCategoryVal,
   updateCategoryVal,
 } from "./category.validation.js";
+import { asyncHandler, cloudUpload, roles } from "../../utils/index.js";
 import {
   addCategory,
   updateCategory,
@@ -14,9 +16,6 @@ import {
   getCategories,
   deleteCategory,
 } from "./category.controller.js";
-import { isAuthenticated } from "../../middleware/authentication.js";
-import { isAuthorized } from "../../middleware/authorization.js";
-import { roles } from "../../utils/constant/enums.js";
 const categoryRouter = Router();
 
 //add category
@@ -24,7 +23,7 @@ categoryRouter.post(
   "/",
   isAuthenticated(),
   isAuthorized([roles.ADMIN, roles.SELLER]),
-  fileUpload({ folder: "category" }).single("image"),
+  cloudUpload({}).single("image"),
   isValid(addCategoryVal),
   asyncHandler(addCategory)
 );
@@ -44,7 +43,7 @@ categoryRouter.put(
   "/:categoryId",
   isAuthenticated(),
   isAuthorized([roles.ADMIN, roles.SELLER]),
-  fileUpload({ folder: "category" }).single("image"),
+  cloudUpload({}).single("image"),
   isValid(updateCategoryVal),
   asyncHandler(updateCategory)
 );

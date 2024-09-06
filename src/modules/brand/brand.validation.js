@@ -15,14 +15,14 @@ export const updateBrandVal = joi
   })
   .required();
 
-export const getSubcategoryVal = joi
+export const deleteBrandVal = joi
   .object({
-    categoryId: generalFields.objectId.required(),
+    brandId: generalFields.objectId.required(),
   })
   .required();
 
-export const deleteSubcategoryVal = joi
+export const getBrandVal = joi
   .object({
-    subcategoryId: generalFields.objectId.required(),
+    brandId: generalFields.objectId.required(),
   })
   .required();

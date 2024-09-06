@@ -32,13 +32,13 @@ const categorySchema = new Schema(
 
 categorySchema.virtual("subcategories", {
   localField: "_id",
-  foreignField: "category",
+  foreignField: "Category",
   ref: "Subcategory",
 });
 
 categorySchema.virtual("products", {
   localField: "_id",
-  foreignField: "category",
+  foreignField: "Category",
   ref: "Product",
 });
 

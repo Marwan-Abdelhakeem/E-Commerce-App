@@ -7,7 +7,7 @@ const couponSchema = new Schema(
     discount: Number,
     couponType: {
       type: String,
-      enum: Object.values(couponTypes)[("fixedAmount", "percentage")],
+      enum: Object.values(couponTypes),
       default: couponTypes.FIXEDAMOUNT,
     },
     toDate: {

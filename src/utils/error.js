@@ -1,4 +1,4 @@
-import { deleteFile, deleteCloud } from "./file-functions.js";
+import { deleteCloud } from "./file-functions.js";
 
 export class AppError extends Error {
   constructor(message, statusCode) {
@@ -18,12 +18,8 @@ export const asyncHandler = (fn) => {
 
 // globalErrorHandling
 export const globalErrorHandling = (err, req, res, next) => {
-  if (req.file) {
-    deleteFile(req.file.path);
-  }
-
-  if (req.failImages) {
-    deleteCloud(req.failImages);
+  if (req.uploadedImages) {
+    deleteCloud(req.uploadedImages);
   }
 
   return res

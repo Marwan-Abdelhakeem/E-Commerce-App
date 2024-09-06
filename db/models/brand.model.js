@@ -24,9 +24,14 @@ const brandSchema = new Schema(
     },
     logo: Object, //{secure_url, public_id},
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+brandSchema.virtual("products", {
+  localField: "_id",
+  foreignField: "Brand",
+  ref: "Product",
+});
+
 //model
 export const Brand = model("Brand", brandSchema);

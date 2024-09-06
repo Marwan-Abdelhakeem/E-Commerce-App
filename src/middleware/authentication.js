@@ -1,8 +1,5 @@
-import { User } from "../../db/models/user.model.js";
-import { status } from "../utils/constant/enums.js";
-import { AppError } from "../utils/error.js";
-import { messages } from "../utils/index.js";
-import { verifyToken } from "../utils/token.js";
+import { User } from "../../db/index.js";
+import { messages, AppError, status, verifyToken } from "../utils/index.js";
 
 export const isAuthenticated = () => {
   return async (req, res, next) => {
@@ -18,11 +15,6 @@ export const isAuthenticated = () => {
         token,
         secretKey: process.env.secretKeyAccessToken,
       });
-    } else if (bearer == "reset-password") {
-      result = verifyToken({
-        token,
-        secretKey: process.env.secretKeyResetPassword,
-      });
     }
     if (result.message) {
       return next(new AppError(result.message, 401));
@@ -34,6 +26,9 @@ export const isAuthenticated = () => {
     }).select("-password");
     if (!user) {
       return next(new AppError(messages.user.notFound, 404));
+    }
+    if (!user.active) {
+      return next(new AppError("please login", 401));
     }
     req.authUser = user;
     next();

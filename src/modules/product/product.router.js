@@ -1,11 +1,19 @@
 import { Router } from "express";
-import { isValid } from "../../middleware/validation.js";
-import { addProductVal } from "./product.validation.js";
-import { addProduct, getAllProducts } from "./product.controller.js";
-import { asyncHandler, cloudUpload } from "../../utils/index.js";
 import { isAuthenticated } from "../../middleware/authentication.js";
 import { isAuthorized } from "../../middleware/authorization.js";
-import { roles } from "../../utils/constant/enums.js";
+import { isValid } from "../../middleware/validation.js";
+import {
+  addProductVal,
+  deleteProductVal,
+  updateProductVal,
+} from "./product.validation.js";
+import { asyncHandler, cloudUpload, roles } from "../../utils/index.js";
+import {
+  addProduct,
+  deleteProduct,
+  getAllProducts,
+  updateProduct,
+} from "./product.controller.js";
 const productRouter = Router();
 
 // add product
@@ -20,7 +28,26 @@ productRouter.post(
   isValid(addProductVal),
   asyncHandler(addProduct)
 );
-
+// update product
+productRouter.put(
+  "/:productId",
+  isAuthenticated(),
+  isAuthorized([roles.ADMIN, roles.SELLER]),
+  cloudUpload({}).fields([
+    { name: "mainImage", maxCount: 1 },
+    { name: "subImages", maxCount: 5 },
+  ]),
+  isValid(updateProductVal),
+  asyncHandler(updateProduct)
+);
+// delete product
+productRouter.delete(
+  "/:productId",
+  isAuthenticated(),
+  isAuthorized([roles.ADMIN, roles.SELLER]),
+  isValid(deleteProductVal),
+  asyncHandler(deleteProduct)
+);
 //get product
 productRouter.get("/", asyncHandler(getAllProducts));
 

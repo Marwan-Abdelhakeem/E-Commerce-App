@@ -20,19 +20,19 @@ export const createBrand = async (req, res, next) => {
   const slug = slugify(name);
   const { secure_url, public_id } = await cloudinary.uploader.upload(
     req.file.path,
-    { folder: "E-commerce/brand" }
+    { folder: `E-commerce/brand` }
   );
+  req.uploadedImages = [{ public_id }];
   const brand = new Brand({
     name,
     slug,
     logo: { secure_url, public_id },
-    // todo createdBy token
+    createdBy: req.authUser._id,
   });
   // add to db
   const createdBrand = await brand.save();
   if (!createdBrand) {
-    //todo rollback delete logo
-    await cloudinary.uploader.destroy(public_id);
+    // rollback
     return next(new AppError(messages.brand.failToCreate, 500));
   }
   // send response
@@ -74,13 +74,13 @@ export const updateBrand = async (req, res, next) => {
       req.file.path,
       { public_id: brandExist.logo.public_id }
     );
+    req.uploadedImages = [{ public_id }];
     brandExist.logo = { secure_url, public_id };
   }
   // update to db
   const updatedBrand = await brandExist.save();
   if (!updatedBrand) {
-    // rollback delete logo
-    await cloudinary.uploader.destroy(brandExist.logo.public_id);
+    // rollback
     return next(new AppError(messages.brand.failToUpdate, 500));
   }
   // send response
@@ -88,5 +88,70 @@ export const updateBrand = async (req, res, next) => {
     message: messages.brand.updatedSuccessfully,
     success: true,
     data: updatedBrand,
+  });
+};
+
+// get brands
+export const getBrands = async (req, res, next) => {
+  //check notFound
+  const brands = await Brand.find();
+  if (!brands.length) {
+    return next(new AppError(messages.brand.notFound, 404));
+  }
+  // send response
+  return res.status(200).json({
+    success: true,
+    data: brands,
+  });
+};
+
+// get brand
+export const getBrand = async (req, res, next) => {
+  const brand = await Brand.findById(req.params.brandId).populate("products");
+  if (!brand) {
+    return next(new AppError(messages.brand.notFound, 404));
+  }
+  // send response
+  return res.status(200).json({
+    success: true,
+    data: brand,
+  });
+};
+
+// delete brand
+export const deleteBrand = async (req, res, next) => {
+  // get data from req
+  const { brandId } = req.params;
+  // check existence
+  const deletedBrand = await Brand.findByIdAndDelete(brandId).populate([
+    { path: "products", select: "mainImage subImages" },
+  ]);
+  if (!deletedBrand) {
+    return next(new AppError(messages.brand.notFound, 404));
+  }
+  // prepare ids and image public_ids for deletion
+  const productsIds = [];
+  const imagesCloud = [];
+  imagesCloud.push(deletedBrand.logo.public_id);
+  for (const product of deletedBrand.products) {
+    productsIds.push(product._id);
+    // add main image public_id to the array
+    imagesCloud.push(product.mainImage.public_id);
+    // add sub images public_ids to the array
+    for (const image of product.subImages) {
+      imagesCloud.push(image.public_id);
+    }
+  }
+  // delete related products
+  await Product.deleteMany({ _id: { $in: productsIds } });
+  // delete product images from cloudinary
+  for (const public_id of imagesCloud) {
+    await cloudinary.uploader.destroy(public_id);
+  }
+  // send response
+  return res.status(200).json({
+    message: messages.brand.deletedSuccessfully,
+    success: true,
+    data: deletedBrand,
   });
 };
