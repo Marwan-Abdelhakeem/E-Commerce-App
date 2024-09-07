@@ -32,6 +32,14 @@ export const addProduct = async (req, res, next) => {
   if (!subcategoryExist) {
     return next(new AppError(messages.subcategory.notFound, 404));
   }
+  if (subcategoryExist.category != category) {
+    return next(
+      new AppError(
+        "The selected subcategory does not belong to the specified category.",
+        400
+      )
+    );
+  }
   //check file;
   if (Object.keys(req.files).length != 2) {
     return next(new AppError(messages.file.required, 400));
