@@ -73,7 +73,7 @@ export const addProduct = async (req, res, next) => {
     name,
     slug: slugify(name),
     description,
-    category,
+    category: subcategoryExist.category,
     subcategory,
     brand,
     price,
