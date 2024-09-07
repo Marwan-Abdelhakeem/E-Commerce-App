@@ -74,7 +74,7 @@ export const addProduct = async (req, res, next) => {
     slug: slugify(name),
     description,
     brand,
-    category: subcategoryExist.category,
+    category,
     subcategory,
     price,
     discount,
