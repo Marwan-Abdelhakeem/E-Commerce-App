@@ -3,9 +3,10 @@ import express from "express";
 import { connectDB } from "./db/connection.js";
 import * as allRouters from "./src/index.js";
 import { AppError, globalErrorHandling } from "./src/utils/index.js";
-
+import dotenv from "dotenv";
+import path from "path";
 process.on("uncaughtException", () => console.log("error"));
-
+dotenv.config({ path: path.resolve("./config/.env") });
 //create server
 const app = express();
 const port = +process.env.PORT;
