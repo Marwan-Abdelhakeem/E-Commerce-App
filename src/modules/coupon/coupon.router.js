@@ -38,7 +38,7 @@ couponRouter.put(
   isValid(updateCouponVal),
   asyncHandler(updateCoupon)
 );
-couponRouter.put(
+couponRouter.get(
   "/:couponId",
   isAuthenticated(),
   isAuthorized([roles.ADMIN]),
