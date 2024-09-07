@@ -1,5 +1,11 @@
+import Stripe from "stripe";
 import { Cart, Coupon, Order, Product } from "../../../db/index.js";
-import { AppError, couponTypes, messages } from "../../utils/index.js";
+import {
+  AppError,
+  couponTypes,
+  messages,
+  paymentMethods,
+} from "../../utils/index.js";
 
 export const createOrder = async (req, res, next) => {
   const { phone, street, coupon, paymentMethod } = req.body;
@@ -33,10 +39,17 @@ export const createOrder = async (req, res, next) => {
         new AppError(`product ${productExist.name} is out of stock`, 400)
       );
     }
+
+    const subImagesUrls = productExist.subImages.map(
+      (image) => image.secure_url
+    );
+    const images = [productExist.mainImage.secure_url, ...subImagesUrls];
+
     orderPrice += productExist.finalPrice * product.quantity;
     orderProducts.push({
       name: productExist.name,
       productId: productExist._id,
+      images,
       price: productExist.price,
       finalPrice: productExist.finalPrice,
       quantity: product.quantity,
@@ -64,7 +77,40 @@ export const createOrder = async (req, res, next) => {
     orderPrice,
     finalPrice,
   });
+  // add to db
   const createdOrder = await order.save();
+  // integrate with payment gateway
+  // todo add API keys .env
+  if (paymentMethod == paymentMethods.VISA) {
+    const stripe = new Stripe(
+      "sk_test_51Pw7vlIuYceiim4n4I0g3QCGAorpxXQJhkAf9y3dx6mvmZO4zrJs0XWFGCjaLI51GQHyFy3n07JqJheynP4w4uLm00lcilPzXt"
+    );
+    const checkout = await stripe.checkout.sessions.create({
+      success_url: "https://www.google.com",
+      cancel_url: "https://www.facebook.com",
+      payment_method_types: ["card"],
+      mode: "payment", //Payment type: subscription or payment
+      line_items: createdOrder.products.map((product) => {
+        return {
+          price_data: {
+            currency: "egp",
+            product_data: {
+              name: product.name,
+              images: product.images,
+            },
+            unit_amount: product.price * 100,
+          },
+          quantity: product.quantity,
+        };
+      }),
+    });
+    return res.status(201).json({
+      message: messages.order.createdSuccessfully,
+      success: true,
+      data: createdOrder,
+      url: checkout.url,
+    });
+  }
   return res.status(201).json({
     message: messages.order.createdSuccessfully,
     success: true,
