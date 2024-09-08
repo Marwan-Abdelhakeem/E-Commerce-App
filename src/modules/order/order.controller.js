@@ -125,3 +125,40 @@ export const createOrder = async (req, res, next) => {
     data: createdOrder,
   });
 };
+export const CheckoutSessionCompleted = async (req, res) => {
+  const sig = req.headers["stripe-signature"].toString();
+  let event = Stripe.webhooks.constructEvent(
+    req.body,
+    sig,
+    process.env.StripeEndpointSecret
+  );
+  // Handle the event
+  if (event.type === "checkout.session.completed") {
+    const checkout = event.data.object;
+    const orderId = checkout.metadata.orderId;
+    console.log("Checkout session completed for orderId:", orderId);
+    // update order status placed
+    const orderExist = await Order.findByIdAndUpdate(
+      orderId,
+      { status: "placed" },
+      { new: true }
+    );
+    if (!orderExist) {
+      console.error("Order not found:", orderId);
+      return res.status(404).send("Order not found");
+    }
+    console.log("Order found and updated:", orderExist);
+    // clear cart
+    await Cart.findOneAndUpdate({ user: orderExist.user }, { products: [] });
+    console.log("Cart cleared for user:", orderExist.user);
+    // update product stock
+    for (const product of orderExist.products) {
+      await Product.findByIdAndUpdate(product.productId, {
+        $inc: { stock: -product.quantity },
+      });
+      console.log(`Stock updated for product ${product.productId}`);
+    }
+  }
+  // Return a 200 response to acknowledge receipt of the event
+  res.status(200).send("Webhook received");
+};
