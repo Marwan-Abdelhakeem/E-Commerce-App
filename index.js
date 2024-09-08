@@ -2,6 +2,7 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
+import Stripe from "stripe";
 import { connectDB } from "./db/connection.js";
 import { Cart, Order, Product } from "./db/index.js";
 import * as allRouters from "./src/index.js";
@@ -63,7 +64,7 @@ app.post(
       let event;
 
       try {
-        event = stripe.webhooks.constructEvent(
+        event = Stripe.webhooks.constructEvent(
           req.body,
           sig,
           process.env.StripeEndpointSecret
