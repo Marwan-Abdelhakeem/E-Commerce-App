@@ -58,13 +58,11 @@ export const deleteReview = async (req, res, next) => {
   avgRate = avgRate / rating.length;
   await Product.findByIdAndUpdate(reviewExist.product, { rate: avgRate });
   await Review.findByIdAndDelete(reviewId);
-  return res
-    .status(200)
-    .json({
-      message: messages.review.deletedSuccessfully,
-      success: true,
-      data: { avgRate },
-    });
+  return res.status(200).json({
+    message: messages.review.deletedSuccessfully,
+    success: true,
+    data: { avgRate },
+  });
 };
 
 export const getAllReviewsOfProduct = async (req, res, next) => {
@@ -77,7 +75,6 @@ export const getAllReviewsOfProduct = async (req, res, next) => {
     "user",
     "userName email"
   );
-
   if (reviews.length === 0) {
     return res.status(200).json({
       message: "No reviews for this product yet.",
@@ -85,7 +82,6 @@ export const getAllReviewsOfProduct = async (req, res, next) => {
       data: [],
     });
   }
-
   return res.status(200).json({
     message: "Reviews fetched successfully",
     success: true,

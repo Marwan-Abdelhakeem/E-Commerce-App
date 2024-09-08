@@ -48,3 +48,10 @@ export const removeFromCart = async (req, res, next) => {
     data: productInCart,
   });
 };
+export const getCart = async (req, res, next) => {
+  const cart = await Cart.findOne({ user: req.authUser._id });
+  return res.status(200).json({
+    success: true,
+    data: cart,
+  });
+};

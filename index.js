@@ -20,6 +20,42 @@ const port = +process.env.PORT || 3000;
 //connect to db
 connectDB();
 
+// app.post(
+//   "/webhook",
+//   express.raw({ type: "application/json" }),
+//   asyncHandler(async (req, res) => {
+//     const sig = req.headers["stripe-signature"].toString();
+//     let event = Stripe.webhooks.constructEvent(
+//       req.body,
+//       sig,
+//       process.env.StripeEndpointSecret
+//     ); // endpointSecret
+//     // Handle the event
+//     if (event.type == "checkout.session.completed") {
+//       const checkout = event.data.object;
+//       const orderId = checkout.metaData.orderId;
+//       // update order status placed
+//       const orderExist = await Order.findByIdAndUpdate(
+//         orderId,
+//         {
+//           status: "placed",
+//         },
+//         { new: true }
+//       );
+//       // clear cart
+//       await Cart.findOneAndUpdate({ user: orderExist.user }, { products: [] });
+//       // update product stock
+//       for (const product of orderExist.products) {
+//         await Product.findByIdAndUpdate(product.productId, {
+//           $inc: { stock: -product.quantity },
+//         });
+//       }
+//     }
+//     // Return a 200 res to acknowledge receipt of the event
+//     res.send();
+//   })
+// );
+
 app.post(
   "/webhook",
   express.raw({ type: "application/json" }),
@@ -29,30 +65,36 @@ app.post(
       req.body,
       sig,
       process.env.StripeEndpointSecret
-    ); // endpointSecret
+    );
     // Handle the event
-    if (event.type == "checkout.session.completed") {
+    if (event.type === "checkout.session.completed") {
       const checkout = event.data.object;
-      const orderId = checkout.metaData.orderId;
+      const orderId = checkout.metadata.orderId;
+      console.log("Checkout session completed for orderId:", orderId);
       // update order status placed
       const orderExist = await Order.findByIdAndUpdate(
         orderId,
-        {
-          status: "placed",
-        },
+        { status: "placed" },
         { new: true }
       );
+      if (!orderExist) {
+        console.error("Order not found:", orderId);
+        return res.status(404).send("Order not found");
+      }
+      console.log("Order found and updated:", orderExist);
       // clear cart
       await Cart.findOneAndUpdate({ user: orderExist.user }, { products: [] });
+      console.log("Cart cleared for user:", orderExist.user);
       // update product stock
       for (const product of orderExist.products) {
         await Product.findByIdAndUpdate(product.productId, {
           $inc: { stock: -product.quantity },
         });
+        console.log(`Stock updated for product ${product.productId}`);
       }
     }
-    // Return a 200 res to acknowledge receipt of the event
-    res.send();
+    // Return a 200 response to acknowledge receipt of the event
+    res.status(200).send("Webhook received");
   })
 );
 
