@@ -28,6 +28,7 @@ export const createOrder = async (req, res, next) => {
   let orderPrice = 0;
   let finalPrice = 0;
   let orderProducts = [];
+  let discount = couponExist.discount;
   for (const product of products) {
     const productExist = await Product.findById(product.productId);
     if (!productExist) {
@@ -46,11 +47,8 @@ export const createOrder = async (req, res, next) => {
     const images = [productExist.mainImage.secure_url, ...subImagesUrls];
 
     let finalProductPrice = productExist.finalPrice;
-    let discount = couponExist.discount;
-    if (couponExist.couponType === couponTypes.FIXEDAMOUNT) {
-      finalProductPrice -= couponExist.discount / products.length;
-      discount = `${couponExist.discount} $`;
-    } else if (couponExist.couponType === couponTypes.PERCENTAGE) {
+
+    if (couponExist.couponType === couponTypes.PERCENTAGE) {
       finalProductPrice -= finalProductPrice * (couponExist.discount / 100);
       discount = `${couponExist.discount} %`;
     }
@@ -67,7 +65,10 @@ export const createOrder = async (req, res, next) => {
       discount: productExist.discount,
     });
   }
-
+  if (couponExist.couponType === couponTypes.FIXEDAMOUNT) {
+    orderPrice -= couponExist.discount;
+    discount = `${couponExist.discount} $`;
+  }
   finalPrice = orderPrice;
 
   const order = new Order({
@@ -76,7 +77,7 @@ export const createOrder = async (req, res, next) => {
     coupon: {
       couponId: couponExist._id,
       code: coupon,
-      discount: couponExist.discount,
+      discount,
     },
     paymentMethod,
     products: orderProducts,
