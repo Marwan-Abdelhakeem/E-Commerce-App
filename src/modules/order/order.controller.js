@@ -24,6 +24,7 @@ export const createOrder = async (req, res, next) => {
     return next(new AppError("cart is empty", 400));
   }
   const products = cart.products;
+  let totalPriceBeforeDiscount = 0;
   let orderPrice = 0;
   let finalPrice = 0;
   let orderProducts = [];
@@ -39,30 +40,35 @@ export const createOrder = async (req, res, next) => {
         new AppError(`product ${productExist.name} is out of stock`, 400)
       );
     }
-
     const subImagesUrls = productExist.subImages.map(
       (image) => image.secure_url
     );
     const images = [productExist.mainImage.secure_url, ...subImagesUrls];
 
-    orderPrice += productExist.finalPrice * product.quantity;
+    let finalProductPrice = productExist.finalPrice;
+    let discount = couponExist.discount;
+    if (couponExist.couponType === couponTypes.FIXEDAMOUNT) {
+      finalProductPrice -= couponExist.discount / products.length;
+      discount = `${couponExist.discount} $`;
+    } else if (couponExist.couponType === couponTypes.PERCENTAGE) {
+      finalProductPrice -= finalProductPrice * (couponExist.discount / 100);
+      discount = `${couponExist.discount} %`;
+    }
+    totalPriceBeforeDiscount += productExist.finalPrice * product.quantity;
+    orderPrice += finalProductPrice * product.quantity;
+
     orderProducts.push({
       name: productExist.name,
       productId: productExist._id,
       images,
       price: productExist.price,
-      finalPrice: productExist.finalPrice,
+      finalPrice: finalProductPrice,
       quantity: product.quantity,
       discount: productExist.discount,
     });
   }
-  let discount = couponExist.discount;
-  couponExist.couponType == couponTypes.FIXEDAMOUNT
-    ? ((finalPrice = orderPrice - discount), (discount = `${discount} $`))
-    : couponExist.couponType == couponTypes.PERCENTAGE
-    ? ((finalPrice = orderPrice - orderPrice * ((discount || 0) / 100)),
-      (discount = `${discount} %`))
-    : (finalPrice = orderPrice);
+
+  finalPrice = orderPrice;
 
   const order = new Order({
     user: req.authUser._id,
@@ -70,11 +76,11 @@ export const createOrder = async (req, res, next) => {
     coupon: {
       couponId: couponExist._id,
       code: coupon,
-      discount,
+      discount: couponExist.discount,
     },
     paymentMethod,
     products: orderProducts,
-    orderPrice,
+    orderPrice: totalPriceBeforeDiscount,
     finalPrice,
   });
   // add to db
@@ -86,10 +92,15 @@ export const createOrder = async (req, res, next) => {
       "sk_test_51Pw7vlIuYceiim4n4I0g3QCGAorpxXQJhkAf9y3dx6mvmZO4zrJs0XWFGCjaLI51GQHyFy3n07JqJheynP4w4uLm00lcilPzXt"
     );
     const checkout = await stripe.checkout.sessions.create({
-      success_url: "https://www.google.com",
-      cancel_url: "https://www.facebook.com",
+      success_url:
+        "https://res.cloudinary.com/dxyhgxd3j/image/upload/v1725750181/Paymentsuccessful21_wc5bpo.png",
+      cancel_url:
+        "https://res.cloudinary.com/dxyhgxd3j/image/upload/v1725750183/Paymentfailedforweb_xrx0dn.png",
       payment_method_types: ["card"],
       mode: "payment", //Payment type: subscription or payment
+      metadata: {
+        orderId: createdOrder._id.toString(),
+      },
       line_items: createdOrder.products.map((product) => {
         return {
           price_data: {
@@ -98,7 +109,7 @@ export const createOrder = async (req, res, next) => {
               name: product.name,
               images: product.images,
             },
-            unit_amount: product.price * 100,
+            unit_amount: product.finalPrice * 100,
           },
           quantity: product.quantity,
         };
