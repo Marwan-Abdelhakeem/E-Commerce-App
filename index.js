@@ -26,8 +26,8 @@ app.post(
     let event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      "whsec_DR5rUpdnt1REhliVltkAd87NVDa1vYsz"
-    ); // todo endpointSecret
+      process.env.StripeEndpointSecret
+    ); // endpointSecret
     // Handle the event
     if (event.type == "checkout.session.completed") {
       const checkout = event.data.object;

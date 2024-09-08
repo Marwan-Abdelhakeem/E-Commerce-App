@@ -34,14 +34,5 @@ authRouter.put(
   isValid(updateAccountVal),
   asyncHandler(updateAccount)
 );
-// todo logout, delete ,update
-
-// authRouter.delete(
-//   "/delete-account",
-//   isAuthenticated(),
-//   cloudUpload({}).single("image"),
-//   isValid(updateAccountVal),
-//   asyncHandler(updateAccount)
-// );
 
 export default authRouter;

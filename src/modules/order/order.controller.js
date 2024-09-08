@@ -86,11 +86,8 @@ export const createOrder = async (req, res, next) => {
   // add to db
   const createdOrder = await order.save();
   // integrate with payment gateway
-  // todo add API keys .env
   if (paymentMethod == paymentMethods.VISA) {
-    const stripe = new Stripe(
-      "sk_test_51Pw7vlIuYceiim4n4I0g3QCGAorpxXQJhkAf9y3dx6mvmZO4zrJs0XWFGCjaLI51GQHyFy3n07JqJheynP4w4uLm00lcilPzXt"
-    );
+    const stripe = new Stripe(process.env.StripeAPIkeys);
     const checkout = await stripe.checkout.sessions.create({
       success_url:
         "https://res.cloudinary.com/dxyhgxd3j/image/upload/v1725750181/Paymentsuccessful21_wc5bpo.png",
