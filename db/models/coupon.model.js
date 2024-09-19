@@ -10,15 +10,19 @@ const couponSchema = new Schema(
       enum: Object.values(couponTypes),
       default: couponTypes.FIXEDAMOUNT,
     },
+    fromDate: {
+      type: Date,
+      required: true,
+    },
     toDate: {
-      type: String,
+      type: Date,
       required: true,
     },
     assignedToUser: [
       {
         user: { type: Schema.Types.ObjectId, ref: "User" },
         maxUse: { type: Number, max: 5 },
-        userCount: Number,
+        userCount: { type: Number, default: 0 },
       },
     ],
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },

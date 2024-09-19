@@ -18,6 +18,21 @@ export const createOrder = async (req, res, next) => {
     if (couponExist.toDate < Date.now()) {
       return next(new AppError("coupon expired", 404));
     }
+    // Check if the user is assigned to the coupon
+    if (couponExist.assignedToUser.length > 0) {
+      const userCoupon = couponExist.assignedToUser.find(
+        (entry) => entry.user.toString() === req.authUser._id.toString()
+      );
+      if (!userCoupon) {
+        return next(new AppError("Coupon not assigned to this user", 403));
+      }
+      if (userCoupon.userCount >= userCoupon.maxUse) {
+        return next(new AppError("Coupon usage limit exceeded", 403));
+      }
+      // Update the userCount for this user
+      userCoupon.userCount += 1;
+      await couponExist.save();
+    }
   }
   const cart = await Cart.findOne({ user: req.authUser._id });
   if (!cart.products.length) {
@@ -126,6 +141,22 @@ export const createOrder = async (req, res, next) => {
     data: createdOrder,
   });
 };
+
+export const getAllOrdersFromUser = async (req, res, next) => {
+  const orders = await Order.find({ user: req.authUser._id });
+  if (orders.length === 0) {
+    return res.status(200).json({
+      message: "No orders for this user yet.",
+      success: true,
+      data: [],
+    });
+  }
+  return res.status(200).json({
+    success: true,
+    data: orders,
+  });
+};
+
 export const CheckoutSessionCompleted = async (req, res) => {
   const sig = req.headers["stripe-signature"].toString();
   let event = Stripe.webhooks.constructEvent(

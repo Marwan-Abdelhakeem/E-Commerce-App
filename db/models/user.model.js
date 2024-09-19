@@ -49,10 +49,16 @@ const userSchema = new Schema(
       },
       public_id: { type: String, default: "user_rhqrfo" },
     },
-    wishlist: [{
-      type: Schema.Types.ObjectId,
-      ref: "Product"
-    }]
+    wishlist: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Product",
+      },
+    ],
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

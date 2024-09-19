@@ -2,7 +2,8 @@ import { Coupon } from "../../../db/index.js";
 import { AppError, couponTypes, messages } from "../../utils/index.js";
 
 export const createCoupon = async (req, res, next) => {
-  const { code, discount, couponType, fromDate, toDate } = req.body;
+  const { code, discount, couponType, fromDate, toDate, assignedToUser } =
+    req.body;
   const couponExist = await Coupon.findOne({ code });
   if (couponExist) {
     return next(new AppError(messages.coupon.alreadyExist, 409));
@@ -16,6 +17,7 @@ export const createCoupon = async (req, res, next) => {
     couponType,
     fromDate,
     toDate,
+    assignedToUser,
     createdBy: req.authUser._id,
   });
   return res.status(201).json({
@@ -78,7 +80,7 @@ export const updateCoupon = async (req, res, next) => {
 export const deleteCoupon = async (req, res, next) => {
   const { couponId } = req.params;
   const deletedCoupon = await Coupon.findByIdAndDelete(couponId);
-  
+
   if (!deletedCoupon) {
     return next(new AppError(messages.coupon.notFound, 404));
   }

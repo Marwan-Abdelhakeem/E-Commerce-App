@@ -4,7 +4,11 @@ import { isAuthorized } from "../../middleware/authorization.js";
 import { asyncHandler, roles } from "../../utils/index.js";
 import { isValid } from "../../middleware/validation.js";
 import { cerateOrderVal } from "./order.validation.js";
-import { CheckoutSessionCompleted, createOrder } from "./order.controller.js";
+import {
+  CheckoutSessionCompleted,
+  createOrder,
+  getAllOrdersFromUser,
+} from "./order.controller.js";
 
 const orderRouter = Router();
 orderRouter.post(
@@ -13,6 +17,14 @@ orderRouter.post(
   isAuthorized(Object.values(roles)),
   isValid(cerateOrderVal),
   asyncHandler(createOrder)
+);
+
+// get All orders from user
+orderRouter.get(
+  "/my-orders",
+  isAuthenticated(),
+  isAuthorized(Object.values(roles)),
+  asyncHandler(getAllOrdersFromUser)
 );
 
 orderRouter.post(
