@@ -6,7 +6,7 @@ export const signupVal = joi.object({
   userName: joi.string().required(),
   email: joi.string().email().required(),
   phone: joi.string().required(),
-  password: joi.string(),
+  password: joi.string().required(),
   DOB: joi
     .date()
     .less(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000)
@@ -14,12 +14,11 @@ export const signupVal = joi.object({
     .messages({
       "date.less": "Date of birth must be more than 10 years ago.",
       "any.required": "Date of birth is required.",
-    }),
+    }).required(),
   role: joi
     .string()
     .valid(...Object.values(roles))
     .default(roles.USER),
-  // .required(),
 });
 
 // login validation

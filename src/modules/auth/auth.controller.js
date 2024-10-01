@@ -67,7 +67,6 @@ export const verifyAccount = async (req, res, next) => {
   const { token } = req.query;
   // verify token
   const payload = verifyToken({ token });
-  //
   const user = await User.findOneAndUpdate(
     { email: payload.email, status: status.PENDING },
     { status: status.VERIFIED },
