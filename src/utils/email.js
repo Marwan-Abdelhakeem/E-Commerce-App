@@ -12,7 +12,7 @@ export const sendEmail = async ({ to = "", subject = "", html = "" }) => {
     },
   });
   const info = await transporter.sendMail({
-    from: `'E-commerce'<${GMAIL_AUTH_USER}>`,
+    from: `'E-commerce'<${process.env.GMAIL_USER_PASS}>`,
     to,
     subject,
     html,
