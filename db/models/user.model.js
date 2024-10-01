@@ -27,13 +27,11 @@ const userSchema = new Schema(
     role: {
       type: String,
       enum: Object.values(roles),
-      unique: true,
       default: roles.USER,
     },
     status: {
       type: String,
       enum: Object.values(status),
-      unique: true,
       default: status.PENDING,
     },
     active: {
